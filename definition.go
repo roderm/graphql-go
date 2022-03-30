@@ -193,19 +193,19 @@ func GetNamed(ttype Type) Named {
 //
 // Example:
 //
-//    var OddType = new Scalar({
-//      name: 'Odd',
-//      serialize(value) {
-//        return value % 2 === 1 ? value : null;
-//      }
-//    });
-//
+//	var OddType = new Scalar({
+//	  name: 'Odd',
+//	  serialize(value) {
+//	    return value % 2 === 1 ? value : null;
+//	  }
+//	});
 type Scalar struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
 
 	scalarConfig ScalarConfig
 	err          error
+	extensions   map[string]interface{}
 }
 
 // SerializeFn is a function type for serializing a GraphQLScalar type value
@@ -224,6 +224,7 @@ type ScalarConfig struct {
 	Serialize    SerializeFn
 	ParseValue   ParseValueFn
 	ParseLiteral ParseLiteralFn
+	Extensions   map[string]interface{}
 }
 
 // NewScalar creates a new GraphQLScalar
@@ -243,6 +244,7 @@ func NewScalar(config ScalarConfig) *Scalar {
 
 	st.PrivateName = config.Name
 	st.PrivateDescription = config.Description
+	st.extensions = config.Extensions
 
 	err = invariantf(
 		config.Serialize != nil,
@@ -299,6 +301,9 @@ func (st *Scalar) String() string {
 func (st *Scalar) Error() error {
 	return st.err
 }
+func (st Scalar) Extensions() map[string]interface{} {
+	return st.extensions
+}
 
 // Object Type Definition
 //
@@ -306,19 +311,19 @@ func (st *Scalar) Error() error {
 // have a name, but most importantly describe their fields.
 // Example:
 //
-//    var AddressType = new Object({
-//      name: 'Address',
-//      fields: {
-//        street: { type: String },
-//        number: { type: Int },
-//        formatted: {
-//          type: String,
-//          resolve(obj) {
-//            return obj.number + ' ' + obj.street
-//          }
-//        }
-//      }
-//    });
+//	var AddressType = new Object({
+//	  name: 'Address',
+//	  fields: {
+//	    street: { type: String },
+//	    number: { type: Int },
+//	    formatted: {
+//	      type: String,
+//	      resolve(obj) {
+//	        return obj.number + ' ' + obj.street
+//	      }
+//	    }
+//	  }
+//	});
 //
 // When two types need to refer to each other, or a type needs to refer to
 // itself in a field, you can use a function expression (aka a closure or a
@@ -326,13 +331,13 @@ func (st *Scalar) Error() error {
 //
 // Example:
 //
-//    var PersonType = new Object({
-//      name: 'Person',
-//      fields: () => ({
-//        name: { type: String },
-//        bestFriend: { type: PersonType },
-//      })
-//    });
+//	var PersonType = new Object({
+//	  name: 'Person',
+//	  fields: () => ({
+//	    name: { type: String },
+//	    bestFriend: { type: PersonType },
+//	  })
+//	});
 //
 // /
 type Object struct {
@@ -345,6 +350,7 @@ type Object struct {
 	fields                FieldDefinitionMap
 	initialisedInterfaces bool
 	interfaces            []*Interface
+	extensions            map[string]interface{}
 	// Interim alternative to throwing an error during schema definition at run-time
 	err error
 }
@@ -369,11 +375,12 @@ type IsTypeOfFn func(p IsTypeOfParams) bool
 type InterfacesThunk func() []*Interface
 
 type ObjectConfig struct {
-	Name        string      `json:"name"`
-	Interfaces  interface{} `json:"interfaces"`
-	Fields      interface{} `json:"fields"`
-	IsTypeOf    IsTypeOfFn  `json:"isTypeOf"`
-	Description string      `json:"description"`
+	Name        string                 `json:"name"`
+	Interfaces  interface{}            `json:"interfaces"`
+	Fields      interface{}            `json:"fields"`
+	IsTypeOf    IsTypeOfFn             `json:"isTypeOf"`
+	Description string                 `json:"description"`
+	Extensions  map[string]interface{} `json:"extensions"`
 }
 
 type FieldsThunk func() Fields
@@ -396,6 +403,7 @@ func NewObject(config ObjectConfig) *Object {
 	objectType.PrivateDescription = config.Description
 	objectType.IsTypeOf = config.IsTypeOf
 	objectType.typeConfig = config
+	objectType.extensions = config.Extensions
 
 	return objectType
 }
@@ -463,6 +471,10 @@ func (gt *Object) Interfaces() []*Interface {
 	gt.interfaces, gt.err = defineInterfaces(gt, configInterfaces)
 	gt.initialisedInterfaces = true
 	return gt.interfaces
+}
+
+func (gt Object) Extensions() map[string]interface{} {
+	return gt.extensions
 }
 
 func (gt *Object) Error() error {
@@ -668,14 +680,12 @@ func (st *Argument) Error() error {
 //
 // Example:
 //
-//     var EntityType = new Interface({
-//       name: 'Entity',
-//       fields: {
-//         name: { type: String }
-//       }
-//     });
-//
-//
+//	var EntityType = new Interface({
+//	  name: 'Entity',
+//	  fields: {
+//	    name: { type: String }
+//	  }
+//	});
 type Interface struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
@@ -685,12 +695,14 @@ type Interface struct {
 	initialisedFields bool
 	fields            FieldDefinitionMap
 	err               error
+	extensions        map[string]interface{}
 }
 type InterfaceConfig struct {
 	Name        string      `json:"name"`
 	Fields      interface{} `json:"fields"`
 	ResolveType ResolveTypeFn
 	Description string `json:"description"`
+	Extensions  map[string]interface{}
 }
 
 // ResolveTypeParams Params for ResolveTypeFn()
@@ -723,6 +735,7 @@ func NewInterface(config InterfaceConfig) *Interface {
 	it.PrivateDescription = config.Description
 	it.ResolveType = config.ResolveType
 	it.typeConfig = config
+	it.extensions = config.Extensions
 
 	return it
 }
@@ -771,6 +784,10 @@ func (it *Interface) Error() error {
 	return it.err
 }
 
+func (it Interface) Extensions() map[string]interface{} {
+	return it.extensions
+}
+
 // Union Type Definition
 //
 // When a field can return one of a heterogeneous set of types, a Union type
@@ -779,18 +796,18 @@ func (it *Interface) Error() error {
 //
 // Example:
 //
-//     var PetType = new Union({
-//       name: 'Pet',
-//       types: [ DogType, CatType ],
-//       resolveType(value) {
-//         if (value instanceof Dog) {
-//           return DogType;
-//         }
-//         if (value instanceof Cat) {
-//           return CatType;
-//         }
-//       }
-//     });
+//	var PetType = new Union({
+//	  name: 'Pet',
+//	  types: [ DogType, CatType ],
+//	  resolveType(value) {
+//	    if (value instanceof Dog) {
+//	      return DogType;
+//	    }
+//	    if (value instanceof Cat) {
+//	      return CatType;
+//	    }
+//	  }
+//	});
 type Union struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
@@ -800,6 +817,7 @@ type Union struct {
 	initalizedTypes bool
 	types           []*Object
 	possibleTypes   map[string]bool
+	extensions      map[string]interface{}
 
 	err error
 }
@@ -811,6 +829,7 @@ type UnionConfig struct {
 	Types       interface{} `json:"types"`
 	ResolveType ResolveTypeFn
 	Description string `json:"description"`
+	Extensions  map[string]interface{}
 }
 
 func NewUnion(config UnionConfig) *Union {
@@ -825,6 +844,7 @@ func NewUnion(config UnionConfig) *Union {
 	objectType.PrivateName = config.Name
 	objectType.PrivateDescription = config.Description
 	objectType.ResolveType = config.ResolveType
+	objectType.extensions = config.Extensions
 
 	objectType.typeConfig = config
 
@@ -903,6 +923,9 @@ func (ut *Union) Description() string {
 func (ut *Union) Error() error {
 	return ut.err
 }
+func (ut Union) Extensions() map[string]interface{} {
+	return ut.extensions
+}
 
 // Enum Type Definition
 //
@@ -932,6 +955,7 @@ type Enum struct {
 	values       []*EnumValueDefinition
 	valuesLookup map[interface{}]*EnumValueDefinition
 	nameLookup   map[string]*EnumValueDefinition
+	extensions   map[string]interface{}
 
 	err error
 }
@@ -945,6 +969,7 @@ type EnumConfig struct {
 	Name        string             `json:"name"`
 	Values      EnumValueConfigMap `json:"values"`
 	Description string             `json:"description"`
+	Extensions  map[string]interface{}
 }
 type EnumValueDefinition struct {
 	Name              string      `json:"name"`
@@ -963,6 +988,8 @@ func NewEnum(config EnumConfig) *Enum {
 
 	gt.PrivateName = config.Name
 	gt.PrivateDescription = config.Description
+	gt.extensions = config.Extensions
+
 	if gt.values, gt.err = gt.defineEnumValues(config.Values); gt.err != nil {
 		return gt
 	}
@@ -1056,6 +1083,9 @@ func (gt *Enum) String() string {
 func (gt *Enum) Error() error {
 	return gt.err
 }
+func (gt Enum) Extensions() map[string]interface{} {
+	return gt.extensions
+}
 func (gt *Enum) getValueLookup() map[interface{}]*EnumValueDefinition {
 	if len(gt.valuesLookup) > 0 {
 		return gt.valuesLookup
@@ -1085,18 +1115,18 @@ func (gt *Enum) getNameLookup() map[string]*EnumValueDefinition {
 // An input object defines a structured collection of fields which may be
 // supplied to a field argument.
 //
-// Using `NonNull` will ensure that a value must be provided by the query
+// # Using `NonNull` will ensure that a value must be provided by the query
 //
 // Example:
 //
-//     var GeoPoint = new InputObject({
-//       name: 'GeoPoint',
-//       fields: {
-//         lat: { type: new NonNull(Float) },
-//         lon: { type: new NonNull(Float) },
-//         alt: { type: Float, defaultValue: 0 },
-//       }
-//     });
+//	var GeoPoint = new InputObject({
+//	  name: 'GeoPoint',
+//	  fields: {
+//	    lat: { type: new NonNull(Float) },
+//	    lon: { type: new NonNull(Float) },
+//	    alt: { type: Float, defaultValue: 0 },
+//	  }
+//	});
 type InputObject struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
@@ -1105,11 +1135,13 @@ type InputObject struct {
 	fields     InputObjectFieldMap
 	init       bool
 	err        error
+	extensions map[string]interface{}
 }
 type InputObjectFieldConfig struct {
 	Type         Input       `json:"type"`
 	DefaultValue interface{} `json:"defaultValue"`
 	Description  string      `json:"description"`
+	Extensions   map[string]interface{}
 }
 type InputObjectField struct {
 	PrivateName        string      `json:"name"`
@@ -1138,6 +1170,7 @@ type InputObjectConfig struct {
 	Name        string      `json:"name"`
 	Fields      interface{} `json:"fields"`
 	Description string      `json:"description"`
+	Extensions  map[string]interface{}
 }
 
 func NewInputObject(config InputObjectConfig) *InputObject {
@@ -1149,6 +1182,7 @@ func NewInputObject(config InputObjectConfig) *InputObject {
 	gt.PrivateName = config.Name
 	gt.PrivateDescription = config.Description
 	gt.typeConfig = config
+	gt.extensions = config.Extensions
 	return gt
 }
 
@@ -1226,6 +1260,9 @@ func (gt *InputObject) String() string {
 func (gt *InputObject) Error() error {
 	return gt.err
 }
+func (gt InputObject) Extensions() map[string]interface{} {
+	return gt.extensions
+}
 
 // List Modifier
 //
@@ -1235,14 +1272,13 @@ func (gt *InputObject) Error() error {
 //
 // Example:
 //
-//     var PersonType = new Object({
-//       name: 'Person',
-//       fields: () => ({
-//         parents: { type: new List(Person) },
-//         children: { type: new List(Person) },
-//       })
-//     })
-//
+//	var PersonType = new Object({
+//	  name: 'Person',
+//	  fields: () => ({
+//	    parents: { type: new List(Person) },
+//	    children: { type: new List(Person) },
+//	  })
+//	})
 type List struct {
 	OfType Type `json:"ofType"`
 
@@ -1286,12 +1322,12 @@ func (gl *List) Error() error {
 //
 // Example:
 //
-//     var RowType = new Object({
-//       name: 'Row',
-//       fields: () => ({
-//         id: { type: new NonNull(String) },
-//       })
-//     })
+//	var RowType = new Object({
+//	  name: 'Row',
+//	  fields: () => ({
+//	    id: { type: new NonNull(String) },
+//	  })
+//	})
 //
 // Note: the enforcement of non-nullability occurs within the executor.
 type NonNull struct {
