@@ -200,8 +200,9 @@ func GetNamed(ttype Type) Named {
 //	  }
 //	});
 type Scalar struct {
-	PrivateName        string `json:"name"`
-	PrivateDescription string `json:"description"`
+	PrivateName        string              `json:"name"`
+	PrivateDescription string              `json:"description"`
+	AppliedDirectives  []*AppliedDirective `json:"appliedDirectives"`
 
 	scalarConfig ScalarConfig
 	err          error
@@ -219,12 +220,13 @@ type ParseLiteralFn func(valueAST ast.Value) interface{}
 
 // ScalarConfig options for creating a new GraphQLScalar
 type ScalarConfig struct {
-	Name         string `json:"name"`
-	Description  string `json:"description"`
-	Serialize    SerializeFn
-	ParseValue   ParseValueFn
-	ParseLiteral ParseLiteralFn
-	Extensions   map[string]interface{}
+	Name              string `json:"name"`
+	Description       string `json:"description"`
+	Serialize         SerializeFn
+	ParseValue        ParseValueFn
+	ParseLiteral      ParseLiteralFn
+	AppliedDirectives []*AppliedDirective
+	Extensions        map[string]interface{}
 }
 
 // NewScalar creates a new GraphQLScalar
@@ -245,6 +247,7 @@ func NewScalar(config ScalarConfig) *Scalar {
 	st.PrivateName = config.Name
 	st.PrivateDescription = config.Description
 	st.extensions = config.Extensions
+	st.AppliedDirectives = config.AppliedDirectives
 
 	err = invariantf(
 		config.Serialize != nil,
@@ -344,6 +347,7 @@ type Object struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
 	IsTypeOf           IsTypeOfFn
+	AppliedDirectives  []*AppliedDirective `json:"appliedDirectives"`
 
 	typeConfig            ObjectConfig
 	initialisedFields     bool
@@ -375,12 +379,13 @@ type IsTypeOfFn func(p IsTypeOfParams) bool
 type InterfacesThunk func() []*Interface
 
 type ObjectConfig struct {
-	Name        string                 `json:"name"`
-	Interfaces  interface{}            `json:"interfaces"`
-	Fields      interface{}            `json:"fields"`
-	IsTypeOf    IsTypeOfFn             `json:"isTypeOf"`
-	Description string                 `json:"description"`
-	Extensions  map[string]interface{} `json:"extensions"`
+	Name              string                 `json:"name"`
+	Interfaces        interface{}            `json:"interfaces"`
+	Fields            interface{}            `json:"fields"`
+	IsTypeOf          IsTypeOfFn             `json:"isTypeOf"`
+	Description       string                 `json:"description"`
+	AppliedDirectives []*AppliedDirective    `json:"appliedDirectives"`
+	Extensions        map[string]interface{} `json:"extensions"`
 }
 
 type FieldsThunk func() Fields
@@ -402,6 +407,7 @@ func NewObject(config ObjectConfig) *Object {
 	objectType.PrivateName = config.Name
 	objectType.PrivateDescription = config.Description
 	objectType.IsTypeOf = config.IsTypeOf
+	objectType.AppliedDirectives = config.AppliedDirectives
 	objectType.typeConfig = config
 	objectType.extensions = config.Extensions
 
@@ -548,6 +554,7 @@ func defineFieldMap(ttype Named, fieldMap Fields) (FieldDefinitionMap, error) {
 			Resolve:           field.Resolve,
 			Subscribe:         field.Subscribe,
 			DeprecationReason: field.DeprecationReason,
+			AppliedDirectives: field.AppliedDirectives,
 		}
 
 		fieldDef.Args = []*Argument{}
@@ -622,39 +629,57 @@ type Field struct {
 	Subscribe         FieldResolveFn      `json:"-"`
 	DeprecationReason string              `json:"deprecationReason"`
 	Description       string              `json:"description"`
+	AppliedDirectives []*AppliedDirective `json:"appliedDirectives"`
 }
 
 type FieldConfigArgument map[string]*ArgumentConfig
 
 type ArgumentConfig struct {
-	Type         Input       `json:"type"`
-	DefaultValue interface{} `json:"defaultValue"`
-	Description  string      `json:"description"`
+	Type              Input               `json:"type"`
+	DefaultValue      interface{}         `json:"defaultValue"`
+	Description       string              `json:"description"`
+	AppliedDirectives []*AppliedDirective `json:"appliedDirectives"`
 }
 
 type FieldDefinitionMap map[string]*FieldDefinition
 type FieldDefinition struct {
-	Name              string         `json:"name"`
-	Description       string         `json:"description"`
-	Type              Output         `json:"type"`
-	Args              []*Argument    `json:"args"`
-	Resolve           FieldResolveFn `json:"-"`
-	Subscribe         FieldResolveFn `json:"-"`
-	DeprecationReason string         `json:"deprecationReason"`
+	Name              string              `json:"name"`
+	Description       string              `json:"description"`
+	Type              Output              `json:"type"`
+	Args              []*Argument         `json:"args"`
+	Resolve           FieldResolveFn      `json:"-"`
+	Subscribe         FieldResolveFn      `json:"-"`
+	DeprecationReason string              `json:"deprecationReason"`
+	AppliedDirectives []*AppliedDirective `json:"appliedDirectives"`
 }
 
 type FieldArgument struct {
-	Name         string      `json:"name"`
-	Type         Type        `json:"type"`
-	DefaultValue interface{} `json:"defaultValue"`
-	Description  string      `json:"description"`
+	Name              string              `json:"name"`
+	Type              Type                `json:"type"`
+	DefaultValue      interface{}         `json:"defaultValue"`
+	Description       string              `json:"description"`
+	AppliedDirectives []*AppliedDirective `json:"appliedDirectives"`
+}
+
+type DirectiveConfigArgument map[string]*AppliedDirectiveArgumentConfig
+
+type AppliedDirectiveArgumentConfig struct {
+	Type              Type                `json:"type"`
+	Value             interface{}         `json:"value"`
+	AppliedDirectives []*AppliedDirective `json:"appliedDirectives"`
+}
+
+type AppliedDirectiveArgument struct {
+	Name  string      `json:"name"`
+	Value interface{} `json:"value"`
 }
 
 type Argument struct {
-	PrivateName        string      `json:"name"`
-	Type               Input       `json:"type"`
-	DefaultValue       interface{} `json:"defaultValue"`
-	PrivateDescription string      `json:"description"`
+	PrivateName        string              `json:"name"`
+	Type               Input               `json:"type"`
+	DefaultValue       interface{}         `json:"defaultValue"`
+	PrivateDescription string              `json:"description"`
+	AppliedDirectives  []*AppliedDirective `json:"appliedDirectives"`
 }
 
 func (st *Argument) Name() string {
@@ -690,6 +715,7 @@ type Interface struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
 	ResolveType        ResolveTypeFn
+	AppliedDirectives  []*AppliedDirective `json:"appliedDirectives"`
 
 	typeConfig        InterfaceConfig
 	initialisedFields bool
@@ -698,11 +724,12 @@ type Interface struct {
 	extensions        map[string]interface{}
 }
 type InterfaceConfig struct {
-	Name        string      `json:"name"`
-	Fields      interface{} `json:"fields"`
-	ResolveType ResolveTypeFn
-	Description string `json:"description"`
-	Extensions  map[string]interface{}
+	Name              string      `json:"name"`
+	Fields            interface{} `json:"fields"`
+	ResolveType       ResolveTypeFn
+	Description       string `json:"description"`
+	AppliedDirectives []*AppliedDirective
+	Extensions        map[string]interface{}
 }
 
 // ResolveTypeParams Params for ResolveTypeFn()
@@ -734,6 +761,7 @@ func NewInterface(config InterfaceConfig) *Interface {
 	it.PrivateName = config.Name
 	it.PrivateDescription = config.Description
 	it.ResolveType = config.ResolveType
+	it.AppliedDirectives = config.AppliedDirectives
 	it.typeConfig = config
 	it.extensions = config.Extensions
 
@@ -812,6 +840,7 @@ type Union struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
 	ResolveType        ResolveTypeFn
+	AppliedDirectives  []*AppliedDirective
 
 	typeConfig      UnionConfig
 	initalizedTypes bool
@@ -825,11 +854,12 @@ type Union struct {
 type UnionTypesThunk func() []*Object
 
 type UnionConfig struct {
-	Name        string      `json:"name"`
-	Types       interface{} `json:"types"`
-	ResolveType ResolveTypeFn
-	Description string `json:"description"`
-	Extensions  map[string]interface{}
+	Name              string      `json:"name"`
+	Types             interface{} `json:"types"`
+	ResolveType       ResolveTypeFn
+	Description       string `json:"description"`
+	AppliedDirectives []*AppliedDirective
+	Extensions        map[string]interface{}
 }
 
 func NewUnion(config UnionConfig) *Union {
@@ -844,6 +874,7 @@ func NewUnion(config UnionConfig) *Union {
 	objectType.PrivateName = config.Name
 	objectType.PrivateDescription = config.Description
 	objectType.ResolveType = config.ResolveType
+	objectType.AppliedDirectives = config.AppliedDirectives
 	objectType.extensions = config.Extensions
 
 	objectType.typeConfig = config
@@ -950,6 +981,7 @@ func (ut Union) Extensions() map[string]interface{} {
 type Enum struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
+	AppliedDirectives  []*AppliedDirective
 
 	enumConfig   EnumConfig
 	values       []*EnumValueDefinition
@@ -964,18 +996,21 @@ type EnumValueConfig struct {
 	Value             interface{} `json:"value"`
 	DeprecationReason string      `json:"deprecationReason"`
 	Description       string      `json:"description"`
+	AppliedDirectives []*AppliedDirective
 }
 type EnumConfig struct {
-	Name        string             `json:"name"`
-	Values      EnumValueConfigMap `json:"values"`
-	Description string             `json:"description"`
-	Extensions  map[string]interface{}
+	Name              string             `json:"name"`
+	Values            EnumValueConfigMap `json:"values"`
+	Description       string             `json:"description"`
+	AppliedDirectives []*AppliedDirective
+	Extensions        map[string]interface{}
 }
 type EnumValueDefinition struct {
 	Name              string      `json:"name"`
 	Value             interface{} `json:"value"`
 	DeprecationReason string      `json:"deprecationReason"`
 	Description       string      `json:"description"`
+	AppliedDirectives []*AppliedDirective
 }
 
 func NewEnum(config EnumConfig) *Enum {
@@ -988,6 +1023,7 @@ func NewEnum(config EnumConfig) *Enum {
 
 	gt.PrivateName = config.Name
 	gt.PrivateDescription = config.Description
+	gt.AppliedDirectives = config.AppliedDirectives
 	gt.extensions = config.Extensions
 
 	if gt.values, gt.err = gt.defineEnumValues(config.Values); gt.err != nil {
@@ -1023,6 +1059,7 @@ func (gt *Enum) defineEnumValues(valueMap EnumValueConfigMap) ([]*EnumValueDefin
 			Value:             valueConfig.Value,
 			DeprecationReason: valueConfig.DeprecationReason,
 			Description:       valueConfig.Description,
+			AppliedDirectives: valueConfig.AppliedDirectives,
 		}
 		if value.Value == nil {
 			value.Value = valueName
@@ -1130,6 +1167,7 @@ func (gt *Enum) getNameLookup() map[string]*EnumValueDefinition {
 type InputObject struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
+	AppliedDirectives  []*AppliedDirective
 
 	typeConfig InputObjectConfig
 	fields     InputObjectFieldMap
@@ -1138,16 +1176,18 @@ type InputObject struct {
 	extensions map[string]interface{}
 }
 type InputObjectFieldConfig struct {
-	Type         Input       `json:"type"`
-	DefaultValue interface{} `json:"defaultValue"`
-	Description  string      `json:"description"`
-	Extensions   map[string]interface{}
+	Type              Input       `json:"type"`
+	DefaultValue      interface{} `json:"defaultValue"`
+	Description       string      `json:"description"`
+	AppliedDirectives []*AppliedDirective
+	Extensions        map[string]interface{}
 }
 type InputObjectField struct {
 	PrivateName        string      `json:"name"`
 	Type               Input       `json:"type"`
 	DefaultValue       interface{} `json:"defaultValue"`
 	PrivateDescription string      `json:"description"`
+	AppliedDirectives  []*AppliedDirective
 }
 
 func (st *InputObjectField) Name() string {
@@ -1167,10 +1207,11 @@ type InputObjectConfigFieldMap map[string]*InputObjectFieldConfig
 type InputObjectFieldMap map[string]*InputObjectField
 type InputObjectConfigFieldMapThunk func() InputObjectConfigFieldMap
 type InputObjectConfig struct {
-	Name        string      `json:"name"`
-	Fields      interface{} `json:"fields"`
-	Description string      `json:"description"`
-	Extensions  map[string]interface{}
+	Name              string      `json:"name"`
+	Fields            interface{} `json:"fields"`
+	Description       string      `json:"description"`
+	AppliedDirectives []*AppliedDirective
+	Extensions        map[string]interface{}
 }
 
 func NewInputObject(config InputObjectConfig) *InputObject {
@@ -1181,6 +1222,7 @@ func NewInputObject(config InputObjectConfig) *InputObject {
 
 	gt.PrivateName = config.Name
 	gt.PrivateDescription = config.Description
+	gt.AppliedDirectives = config.AppliedDirectives
 	gt.typeConfig = config
 	gt.extensions = config.Extensions
 	return gt
@@ -1224,6 +1266,7 @@ func (gt *InputObject) defineFieldMap() InputObjectFieldMap {
 		field.Type = fieldConfig.Type
 		field.PrivateDescription = fieldConfig.Description
 		field.DefaultValue = fieldConfig.DefaultValue
+		field.AppliedDirectives = fieldConfig.AppliedDirectives
 		resultFieldMap[fieldName] = field
 	}
 	gt.init = true
@@ -1297,14 +1340,14 @@ func NewList(ofType Type) *List {
 	return gl
 }
 func (gl *List) Name() string {
-	return fmt.Sprintf("%v", gl.OfType)
+	return fmt.Sprintf("[%v]", gl.OfType)
 }
 func (gl *List) Description() string {
 	return ""
 }
 func (gl *List) String() string {
 	if gl.OfType != nil {
-		return fmt.Sprintf("[%v]", gl.OfType)
+		return gl.Name()
 	}
 	return ""
 }
