@@ -206,7 +206,6 @@ type Scalar struct {
 
 	scalarConfig ScalarConfig
 	err          error
-	extensions   map[string]interface{}
 }
 
 // SerializeFn is a function type for serializing a GraphQLScalar type value
@@ -226,7 +225,6 @@ type ScalarConfig struct {
 	ParseValue        ParseValueFn
 	ParseLiteral      ParseLiteralFn
 	AppliedDirectives []*AppliedDirective
-	Extensions        map[string]interface{}
 }
 
 // NewScalar creates a new GraphQLScalar
@@ -246,7 +244,6 @@ func NewScalar(config ScalarConfig) *Scalar {
 
 	st.PrivateName = config.Name
 	st.PrivateDescription = config.Description
-	st.extensions = config.Extensions
 	st.AppliedDirectives = config.AppliedDirectives
 
 	err = invariantf(
@@ -304,9 +301,6 @@ func (st *Scalar) String() string {
 func (st *Scalar) Error() error {
 	return st.err
 }
-func (st Scalar) Extensions() map[string]interface{} {
-	return st.extensions
-}
 
 // Object Type Definition
 //
@@ -354,7 +348,6 @@ type Object struct {
 	fields                FieldDefinitionMap
 	initialisedInterfaces bool
 	interfaces            []*Interface
-	extensions            map[string]interface{}
 	// Interim alternative to throwing an error during schema definition at run-time
 	err error
 }
@@ -379,13 +372,12 @@ type IsTypeOfFn func(p IsTypeOfParams) bool
 type InterfacesThunk func() []*Interface
 
 type ObjectConfig struct {
-	Name              string                 `json:"name"`
-	Interfaces        interface{}            `json:"interfaces"`
-	Fields            interface{}            `json:"fields"`
-	IsTypeOf          IsTypeOfFn             `json:"isTypeOf"`
-	Description       string                 `json:"description"`
-	AppliedDirectives []*AppliedDirective    `json:"appliedDirectives"`
-	Extensions        map[string]interface{} `json:"extensions"`
+	Name              string              `json:"name"`
+	Interfaces        interface{}         `json:"interfaces"`
+	Fields            interface{}         `json:"fields"`
+	IsTypeOf          IsTypeOfFn          `json:"isTypeOf"`
+	Description       string              `json:"description"`
+	AppliedDirectives []*AppliedDirective `json:"appliedDirectives"`
 }
 
 type FieldsThunk func() Fields
@@ -409,7 +401,6 @@ func NewObject(config ObjectConfig) *Object {
 	objectType.IsTypeOf = config.IsTypeOf
 	objectType.AppliedDirectives = config.AppliedDirectives
 	objectType.typeConfig = config
-	objectType.extensions = config.Extensions
 
 	return objectType
 }
@@ -477,10 +468,6 @@ func (gt *Object) Interfaces() []*Interface {
 	gt.interfaces, gt.err = defineInterfaces(gt, configInterfaces)
 	gt.initialisedInterfaces = true
 	return gt.interfaces
-}
-
-func (gt Object) Extensions() map[string]interface{} {
-	return gt.extensions
 }
 
 func (gt *Object) Error() error {
@@ -721,7 +708,6 @@ type Interface struct {
 	initialisedFields bool
 	fields            FieldDefinitionMap
 	err               error
-	extensions        map[string]interface{}
 }
 type InterfaceConfig struct {
 	Name              string      `json:"name"`
@@ -729,7 +715,6 @@ type InterfaceConfig struct {
 	ResolveType       ResolveTypeFn
 	Description       string `json:"description"`
 	AppliedDirectives []*AppliedDirective
-	Extensions        map[string]interface{}
 }
 
 // ResolveTypeParams Params for ResolveTypeFn()
@@ -763,7 +748,6 @@ func NewInterface(config InterfaceConfig) *Interface {
 	it.ResolveType = config.ResolveType
 	it.AppliedDirectives = config.AppliedDirectives
 	it.typeConfig = config
-	it.extensions = config.Extensions
 
 	return it
 }
@@ -812,10 +796,6 @@ func (it *Interface) Error() error {
 	return it.err
 }
 
-func (it Interface) Extensions() map[string]interface{} {
-	return it.extensions
-}
-
 // Union Type Definition
 //
 // When a field can return one of a heterogeneous set of types, a Union type
@@ -846,7 +826,6 @@ type Union struct {
 	initalizedTypes bool
 	types           []*Object
 	possibleTypes   map[string]bool
-	extensions      map[string]interface{}
 
 	err error
 }
@@ -859,7 +838,6 @@ type UnionConfig struct {
 	ResolveType       ResolveTypeFn
 	Description       string `json:"description"`
 	AppliedDirectives []*AppliedDirective
-	Extensions        map[string]interface{}
 }
 
 func NewUnion(config UnionConfig) *Union {
@@ -875,7 +853,6 @@ func NewUnion(config UnionConfig) *Union {
 	objectType.PrivateDescription = config.Description
 	objectType.ResolveType = config.ResolveType
 	objectType.AppliedDirectives = config.AppliedDirectives
-	objectType.extensions = config.Extensions
 
 	objectType.typeConfig = config
 
@@ -954,9 +931,6 @@ func (ut *Union) Description() string {
 func (ut *Union) Error() error {
 	return ut.err
 }
-func (ut Union) Extensions() map[string]interface{} {
-	return ut.extensions
-}
 
 // Enum Type Definition
 //
@@ -987,7 +961,6 @@ type Enum struct {
 	values       []*EnumValueDefinition
 	valuesLookup map[interface{}]*EnumValueDefinition
 	nameLookup   map[string]*EnumValueDefinition
-	extensions   map[string]interface{}
 
 	err error
 }
@@ -1003,7 +976,6 @@ type EnumConfig struct {
 	Values            EnumValueConfigMap `json:"values"`
 	Description       string             `json:"description"`
 	AppliedDirectives []*AppliedDirective
-	Extensions        map[string]interface{}
 }
 type EnumValueDefinition struct {
 	Name              string      `json:"name"`
@@ -1024,7 +996,6 @@ func NewEnum(config EnumConfig) *Enum {
 	gt.PrivateName = config.Name
 	gt.PrivateDescription = config.Description
 	gt.AppliedDirectives = config.AppliedDirectives
-	gt.extensions = config.Extensions
 
 	if gt.values, gt.err = gt.defineEnumValues(config.Values); gt.err != nil {
 		return gt
@@ -1120,9 +1091,6 @@ func (gt *Enum) String() string {
 func (gt *Enum) Error() error {
 	return gt.err
 }
-func (gt Enum) Extensions() map[string]interface{} {
-	return gt.extensions
-}
 func (gt *Enum) getValueLookup() map[interface{}]*EnumValueDefinition {
 	if len(gt.valuesLookup) > 0 {
 		return gt.valuesLookup
@@ -1173,14 +1141,12 @@ type InputObject struct {
 	fields     InputObjectFieldMap
 	init       bool
 	err        error
-	extensions map[string]interface{}
 }
 type InputObjectFieldConfig struct {
 	Type              Input       `json:"type"`
 	DefaultValue      interface{} `json:"defaultValue"`
 	Description       string      `json:"description"`
 	AppliedDirectives []*AppliedDirective
-	Extensions        map[string]interface{}
 }
 type InputObjectField struct {
 	PrivateName        string      `json:"name"`
@@ -1211,7 +1177,6 @@ type InputObjectConfig struct {
 	Fields            interface{} `json:"fields"`
 	Description       string      `json:"description"`
 	AppliedDirectives []*AppliedDirective
-	Extensions        map[string]interface{}
 }
 
 func NewInputObject(config InputObjectConfig) *InputObject {
@@ -1224,7 +1189,6 @@ func NewInputObject(config InputObjectConfig) *InputObject {
 	gt.PrivateDescription = config.Description
 	gt.AppliedDirectives = config.AppliedDirectives
 	gt.typeConfig = config
-	gt.extensions = config.Extensions
 	return gt
 }
 
@@ -1302,9 +1266,6 @@ func (gt *InputObject) String() string {
 }
 func (gt *InputObject) Error() error {
 	return gt.err
-}
-func (gt InputObject) Extensions() map[string]interface{} {
-	return gt.extensions
 }
 
 // List Modifier
