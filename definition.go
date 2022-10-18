@@ -424,7 +424,7 @@ func (gt *Object) Name() string {
 	return gt.PrivateName
 }
 func (gt *Object) Description() string {
-	return ""
+	return gt.PrivateDescription
 }
 func (gt *Object) String() string {
 	return gt.PrivateName
