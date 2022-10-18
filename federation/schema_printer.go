@@ -17,17 +17,18 @@ func printDescription(desc string, indent int, out *strings.Builder) {
 	if indent > 0 {
 		out.WriteString(strings.Repeat(" ", indent))
 	}
-	maxLineLength := 80 - indent - 4
 
-	if !strings.Contains(desc, "\"") && len(desc) < maxLineLength {
+	if !strings.Contains(desc, "\n") {
 		out.WriteString("\"")
 		out.WriteString(desc)
 		out.WriteString("\"\n")
 	} else {
 		out.WriteString("\"\"\"\n")
-		out.WriteString(strings.Repeat(" ", indent))
-		out.WriteString(desc)
-		out.WriteString("\n")
+		for _, d := range strings.Split(desc, "\n") {
+			out.WriteString(strings.Repeat(" ", indent))
+			out.WriteString(d)
+			out.WriteString("\n")
+		}
 		out.WriteString(strings.Repeat(" ", indent))
 		out.WriteString("\"\"\"\n")
 	}
@@ -35,12 +36,12 @@ func printDescription(desc string, indent int, out *strings.Builder) {
 
 // schema
 
-func printSchemaDefinition(schema graphql.Schema, out *strings.Builder) error {
-	out.WriteString("schema ")
-	printAppliedDirectives(schema.AppliedDirectives(), out)
+func printSchemaDefinition(schema graphql.Schema, out *strings.Builder) {
+	out.WriteString("schema")
+	printAppliedDirectives(schema.AppliedDirectives(), "", out)
 
 	if schema.QueryType() != nil {
-		out.WriteString("{\n")
+		out.WriteString(" {\n")
 		fmt.Fprintf(out, "  query: %v\n", schema.QueryType().Name())
 	} else {
 		panic("invalid schema - schema requires valid query type")
@@ -49,8 +50,11 @@ func printSchemaDefinition(schema graphql.Schema, out *strings.Builder) error {
 	if schema.MutationType() != nil {
 		fmt.Fprintf(out, "  mutation: %v\n", schema.MutationType().Name())
 	}
+
+	if schema.SubscriptionType() != nil {
+		fmt.Fprintf(out, "  subscription: %v\n", schema.SubscriptionType().Name())
+	}
 	out.WriteString("}\n\n")
-	return nil
 }
 
 // directives
@@ -105,11 +109,14 @@ func printDirectiveDefinition(directive *graphql.Directive, out *strings.Builder
 	out.WriteString("\n\n")
 }
 
-func printAppliedDirectives(appliedDirectives []*graphql.AppliedDirective, out *strings.Builder) {
+func printAppliedDirectives(appliedDirectives []*graphql.AppliedDirective, deprecationReason string, out *strings.Builder) {
+	if deprecationReason != "" {
+		fmt.Fprintf(out, " @deprecated(reason: %q)", deprecationReason)
+	}
+
 	if len(appliedDirectives) == 0 {
 		return
 	}
-
 	for _, appliedDirective := range sortAppliedDirectives(appliedDirectives) {
 		out.WriteString(" ")
 		printAppliedDirective(appliedDirective, out)
@@ -175,14 +182,20 @@ func printEnumDefinitions(enums []*graphql.Enum, out *strings.Builder) {
 	for _, enum := range enums {
 		printDescription(enum.Description(), 0, out)
 		fmt.Fprintf(out, "enum %s", enum.Name())
-		printAppliedDirectives(enum.AppliedDirectives, out)
+		printAppliedDirectives(enum.AppliedDirectives, "", out)
 		out.WriteString(" {\n")
 
 		// enum values
-		for _, enumValue := range enum.Values() {
+		sortedValues := make([]*graphql.EnumValueDefinition, len(enum.Values()))
+		copy(sortedValues, enum.Values())
+		sort.Slice(sortedValues, func(i, j int) bool {
+			return sortedValues[i].Name < sortedValues[j].Name
+		})
+		for _, enumValue := range sortedValues {
 			printDescription(enumValue.Description, 2, out)
+			out.WriteString("  ")
 			out.WriteString(enumValue.Name)
-			printAppliedDirectives(enum.AppliedDirectives, out)
+			printAppliedDirectives(enumValue.AppliedDirectives, enumValue.DeprecationReason, out)
 			out.WriteString("\n")
 		}
 
@@ -200,7 +213,7 @@ func printInputObjectDefinitions(inputObjects []*graphql.InputObject, out *strin
 	for _, inputObject := range inputObjects {
 		printDescription(inputObject.Description(), 0, out)
 		fmt.Fprintf(out, "input %s", inputObject.Name())
-		printAppliedDirectives(inputObject.AppliedDirectives, out)
+		printAppliedDirectives(inputObject.AppliedDirectives, "", out)
 		out.WriteString(" {\n")
 		printInputObjectFieldDefinitions(inputObject.Fields(), out)
 		out.WriteString("}\n\n")
@@ -216,12 +229,11 @@ func printInputObjectFieldDefinitions(inputFields graphql.InputObjectFieldMap, o
 	}
 	sort.Strings(keys)
 
-	// InputObjectFieldMap map[string]*InputObjectField
 	for _, key := range keys {
 		field := inputFields[key]
 		printDescription(field.Description(), 2, out)
 		fmt.Fprintf(out, "  %s: %s", field.Name(), field.Type.String())
-		printAppliedDirectives(field.AppliedDirectives, out)
+		printAppliedDirectives(field.AppliedDirectives, "", out)
 		out.WriteString("\n")
 	}
 }
@@ -236,7 +248,7 @@ func printInterfaceDefinitions(interfaces []*graphql.Interface, out *strings.Bui
 	for _, intf := range interfaces {
 		printDescription(intf.Description(), 0, out)
 		fmt.Fprintf(out, "interface %s", intf.Name())
-		printAppliedDirectives(intf.AppliedDirectives, out)
+		printAppliedDirectives(intf.AppliedDirectives, "", out)
 		out.WriteString(" {\n")
 		printFieldDefinitions(intf.Fields(), out)
 		out.WriteString("}\n\n")
@@ -258,10 +270,10 @@ func printObjectDefinitions(objects []*graphql.Object, out *strings.Builder) {
 			for _, i := range object.Interfaces() {
 				interfaces = append(interfaces, i.Name())
 			}
-			out.WriteString(" implements")
+			out.WriteString(" implements ")
 			out.WriteString(strings.Join(interfaces, ", "))
 		}
-		printAppliedDirectives(object.AppliedDirectives, out)
+		printAppliedDirectives(object.AppliedDirectives, "", out)
 		out.WriteString(" {\n")
 		printFieldDefinitions(object.Fields(), out)
 		out.WriteString("}\n\n")
@@ -285,13 +297,13 @@ func printFieldDefinitions(fieldDefinitionMap graphql.FieldDefinitionMap, out *s
 			args := make([]string, 0, len(field.Args))
 			for _, arg := range field.Args {
 				args = append(args, fmt.Sprintf("%s: %s", arg.Name(), arg.Type.Name()))
-				out.WriteString(strings.Join(args, ", "))
 			}
+			out.WriteString(strings.Join(args, ", "))
 			out.WriteString(")")
 		}
 
 		fmt.Fprintf(out, ": %s", field.Type.Name())
-		printAppliedDirectives(field.AppliedDirectives, out)
+		printAppliedDirectives(field.AppliedDirectives, field.DeprecationReason, out)
 		out.WriteString("\n")
 	}
 }
@@ -306,11 +318,14 @@ func printUnionDefinitions(unions []*graphql.Union, out *strings.Builder) {
 	for _, union := range unions {
 		printDescription(union.Description(), 0, out)
 		fmt.Fprintf(out, "union %s", union.Name())
-		printAppliedDirectives(union.AppliedDirectives, out)
+		printAppliedDirectives(union.AppliedDirectives, "", out)
 		typeNames := make([]string, 0, len(union.Types()))
 		for _, t := range union.Types() {
 			typeNames = append(typeNames, t.Name())
 		}
+		sort.Slice(typeNames, func(i, j int) bool {
+			return typeNames[i] < typeNames[j]
+		})
 		out.WriteString(" = ")
 		out.WriteString(strings.Join(typeNames, " | "))
 		out.WriteString("\n\n")
@@ -327,14 +342,39 @@ func printCustomScalars(scalars []*graphql.Scalar, out *strings.Builder) {
 	for _, scalar := range scalars {
 		printDescription(scalar.Description(), 0, out)
 		fmt.Fprintf(out, "scalar %s", scalar.Name())
-		printAppliedDirectives(scalar.AppliedDirectives, out)
+		printAppliedDirectives(scalar.AppliedDirectives, "", out)
 		out.WriteString("\n\n")
 	}
 }
 
+// utils
+
+func isSchemaDefinitionNeeded(schema graphql.Schema) bool {
+	if schema.QueryType() != nil && schema.QueryType().Name() != "Query" {
+		return true
+	}
+	if schema.MutationType() != nil && schema.MutationType().Name() != "Mutation" {
+		return true
+	}
+	if schema.SubscriptionType() != nil && schema.SubscriptionType().Name() != "Subscription" {
+		return true
+	}
+	return false
+}
+
 // public API
 
-func PrintSchema(schema graphql.Schema) (string, error) {
+type PrinterOptions struct {
+	IncludeDirectiveDefinition bool
+	IncludeSchemaDefinition    bool
+}
+
+var DefaultPrinterOptions = PrinterOptions{
+	IncludeDirectiveDefinition: true,
+	IncludeSchemaDefinition:    true,
+}
+
+func PrintSchema(schema graphql.Schema, options PrinterOptions) string {
 	enums := make([]*graphql.Enum, 0, 0)
 	inputObjects := make([]*graphql.InputObject, 0, 0)
 	interfaces := make([]*graphql.Interface, 0, 0)
@@ -372,8 +412,12 @@ func PrintSchema(schema graphql.Schema) (string, error) {
 
 	var sdl strings.Builder
 
-	printSchemaDefinition(schema, &sdl)
-	printDirectiveDefinitions(schema.Directives(), &sdl)
+	if options.IncludeSchemaDefinition || isSchemaDefinitionNeeded(schema) {
+		printSchemaDefinition(schema, &sdl)
+	}
+	if options.IncludeDirectiveDefinition {
+		printDirectiveDefinitions(schema.Directives(), &sdl)
+	}
 	printEnumDefinitions(enums, &sdl)
 	printInputObjectDefinitions(inputObjects, &sdl)
 	printInterfaceDefinitions(interfaces, &sdl)
@@ -381,5 +425,5 @@ func PrintSchema(schema graphql.Schema) (string, error) {
 	printUnionDefinitions(unions, &sdl)
 	printCustomScalars(scalars, &sdl)
 
-	return sdl.String(), nil
+	return strings.TrimSpace(sdl.String())
 }
