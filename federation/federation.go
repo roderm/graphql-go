@@ -194,8 +194,7 @@ func NewFederatedSchema(config FederatedSchemaConfig) (graphql.Schema, error) {
 	}
 
 	// update _service { sdl } resolver to correct value
-	sdl, ok := PrintSchema(schema)
-	println(sdl)
+	sdl := PrintSchema(schema, DefaultPrinterOptions)
 	schema.QueryType().AddFieldConfig("_service", &graphql.Field{
 		Name: "_service",
 		Type: _ServiceType,
