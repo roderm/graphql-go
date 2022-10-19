@@ -31,7 +31,7 @@ func TestSchemaPrinter_printSingleLineTypeDescription(t *testing.T) {
 
 	actual := federation.PrintSchema(schema, federation.PrinterOptions{})
 	if actual != expected {
-		t.Fatalf(`Unexpected single line description. expected = %v, actual = %v`, expected, actual)
+		t.Fatalf(`Unexpected single line description. expected = %q, actual = %q`, expected, actual)
 	}
 }
 
@@ -62,7 +62,7 @@ func TestSchemaPrinter_printMultiLineTypeDescription(t *testing.T) {
 
 	actual := federation.PrintSchema(schema, federation.PrinterOptions{})
 	if actual != expected {
-		t.Fatalf(`Unexpected multi line description. expected = %v, actual = %v`, expected, actual)
+		t.Fatalf(`Unexpected multi line description. expected = %q, actual = %q`, expected, actual)
 	}
 }
 
@@ -397,7 +397,7 @@ type Query {
 
 	actual := federation.PrintSchema(schema, federation.PrinterOptions{})
 	if actual != expected {
-		t.Fatalf(`Unexpected interface definition. expected = %v, actual = %v`, expected, actual)
+		t.Fatalf(`Unexpected interface definition. expected = %q, actual = %q`, expected, actual)
 	}
 }
 
