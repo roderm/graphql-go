@@ -96,8 +96,8 @@ func buildSubgraph(includeQuery bool) (graphql.Schema, error) {
 	return schema, err
 }
 
-func Federation_buildSubraph(t *testing.T) {
-	schema, _ := buildSubgraph(false)
+func TestFederation_buildSubraphWithQuery(t *testing.T) {
+	schema, _ := buildSubgraph(true)
 
 	serviceSDLQuery := `query {
 	  _service { sdl }
@@ -160,9 +160,9 @@ type Product @key(fields: "id", resolvable: true) {
 }
 
 type Query {
-  product(id: ID!): Product
   _entities(representations: [_Any!]!): [_Entity]
   _service: _Service
+  product(id: ID!): Product
 }
 
 type _Service {
