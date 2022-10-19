@@ -153,23 +153,40 @@ func NewFederatedSchema(config FederatedSchemaConfig) (graphql.Schema, error) {
 	// add @link directive to the schema
 	config.AppliedDirectives = append(config.AppliedDirectives, federationLinkAppliedDirective)
 
-	schema, ok := graphql.NewSchema(config.SchemaConfig)
-
 	// add federated types
 	// scalar _Any
-	schema.TypeMap()["_Any"] = _AnyType
-
 	// scalar FieldSet
-	schema.TypeMap()["FieldSet"] = _FieldSetType
+	if config.Types == nil {
+		config.Types = make([]graphql.Type, 0)
+	}
+	config.Types = append(config.Types, _AnyType, _FieldSetType, _ServiceType)
 
-	// type _Service
-	schema.AppendType(_ServiceType)
-	schema.QueryType().AddFieldConfig("_service", &graphql.Field{
-		Name: "_service",
-		Type: _ServiceType,
-	})
+	// ensure there is a valid query type
+	query := config.Query
+	if query == nil {
+		query = graphql.NewObject(graphql.ObjectConfig{
+			Name: "Query",
+			Fields: graphql.Fields{
+				"_service": &graphql.Field{
+					Name: "_service",
+					Type: _ServiceType,
+				},
+			},
+		})
+		config.Query = query
+	} else {
+		query.AddFieldConfig("_service", &graphql.Field{
+			Name: "_service",
+			Type: _ServiceType,
+		})
+	}
 
-	// union _Entity
+	schema, err := graphql.NewSchema(config.SchemaConfig)
+	if err != nil {
+		panic("failure to create schema" + err.Error())
+	}
+
+	// find entities
 	entities := findEntityTypes(schema)
 	if len(entities) > 0 {
 		entityType := graphql.NewUnion(
@@ -202,5 +219,5 @@ func NewFederatedSchema(config FederatedSchemaConfig) (graphql.Schema, error) {
 			return &_Service{SDL: sdl}, nil
 		},
 	})
-	return schema, ok
+	return schema, err
 }
