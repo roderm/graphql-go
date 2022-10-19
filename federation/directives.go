@@ -4,7 +4,9 @@ import (
 	"github.com/graphql-go/graphql"
 )
 
+//
 // directive definitions
+//
 
 // directive @composeDirective(name: String!) repeatable on SCHEMA
 var ComposeDirectiveDefinition = &graphql.Directive{
