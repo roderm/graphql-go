@@ -122,10 +122,10 @@ func isEntity(t *graphql.Object) bool {
 	return false
 }
 
-// @link(import : ["composeDirective", "external", "inaccessible", "key", "override", "provides", "requires", "shareable", "tag", "FieldSet"], url : "https://specs.apollo.dev/federation/v2.1")
+// @link(import : ["@composeDirective", "@external", "@inaccessible", "@key", "@override", "@provides", "@requires", "@shareable", "@tag", "@FieldSet"], url : "https://specs.apollo.dev/federation/v2.1")
 var federationLinkAppliedDirective = LinkAppliedDirective(
 	"https://specs.apollo.dev/federation/v2.1",
-	[]string{"composeDirective", "external", "inaccessible", "key", "override", "provides", "requires", "shareable", "tag", "FieldSet"},
+	[]string{"@composeDirective", "@external", "@inaccessible", "@key", "@override", "@provides", "@requires", "@shareable", "@tag", "FieldSet"},
 )
 
 // new schema
