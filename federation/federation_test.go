@@ -113,7 +113,7 @@ func TestFederation_buildSubraphWithQuery(t *testing.T) {
 	_service, _ := data["_service"].(map[string]interface{})
 	sdl, _ := _service["sdl"].(string)
 
-	expected := `schema @link(url: "https://specs.apollo.dev/federation/v2.1", import: ["composeDirective", "external", "inaccessible", "key", "override", "provides", "requires", "shareable", "tag", "FieldSet"]) {
+	expected := `schema @link(url: "https://specs.apollo.dev/federation/v2.1", import: ["@composeDirective", "@external", "@inaccessible", "@key", "@override", "@provides", "@requires", "@shareable", "@tag", "FieldSet"]) {
   query: Query
 }
 
@@ -228,7 +228,7 @@ func TestFederation_buildSubgraphWithoutQuery(t *testing.T) {
 	_service, _ := data["_service"].(map[string]interface{})
 	sdl, _ := _service["sdl"].(string)
 
-	expected := `schema @link(url: "https://specs.apollo.dev/federation/v2.1", import: ["composeDirective", "external", "inaccessible", "key", "override", "provides", "requires", "shareable", "tag", "FieldSet"]) {
+	expected := `schema @link(url: "https://specs.apollo.dev/federation/v2.1", import: ["@composeDirective", "@external", "@inaccessible", "@key", "@override", "@provides", "@requires", "@shareable", "@tag", "FieldSet"]) {
   query: Query
 }
 
