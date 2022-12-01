@@ -31,6 +31,24 @@ func buildSubgraph(includeQuery bool) (graphql.Schema, error) {
 		},
 	})
 
+	userType := graphql.NewObject(graphql.ObjectConfig{
+		Name:   "User",
+		Extend: true,
+		Fields: graphql.Fields{
+			"id": &graphql.Field{
+				Name: "id",
+				Type: graphql.NewNonNull(graphql.ID),
+			},
+			"purchasedItems": &graphql.Field{
+				Name: "purchasedItems",
+				Type: graphql.NewList(productType),
+			},
+		},
+		AppliedDirectives: []*graphql.AppliedDirective{
+			federation.KeyAppliedDirective("id", true),
+		},
+	})
+
 	var schemaConfig graphql.SchemaConfig
 	if includeQuery {
 		schemaConfig = graphql.SchemaConfig{
@@ -53,12 +71,14 @@ func buildSubgraph(includeQuery bool) (graphql.Schema, error) {
 			}),
 			Types: []graphql.Type{
 				productType,
+				userType,
 			},
 		}
 	} else {
 		schemaConfig = graphql.SchemaConfig{
 			Types: []graphql.Type{
 				productType,
+				userType,
 			},
 		}
 	}
@@ -165,11 +185,16 @@ type Query {
   product(id: ID!): Product
 }
 
+extend type User @key(fields: "id", resolvable: true) {
+  id: ID!
+  purchasedItems: [Product]
+}
+
 type _Service {
   sdl: String!
 }
 
-union _Entity = Product
+union _Entity = Product | User
 
 "String-serialized scalar represents a set of fields that's passed to a federated directive, such as @key, @requires, or @provides"
 scalar FieldSet
@@ -279,11 +304,16 @@ type Query {
   _service: _Service
 }
 
+extend type User @key(fields: "id", resolvable: true) {
+  id: ID!
+  purchasedItems: [Product]
+}
+
 type _Service {
   sdl: String!
 }
 
-union _Entity = Product
+union _Entity = Product | User
 
 "String-serialized scalar represents a set of fields that's passed to a federated directive, such as @key, @requires, or @provides"
 scalar FieldSet

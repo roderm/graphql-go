@@ -123,6 +123,13 @@ func printAppliedDirectives(appliedDirectives []*graphql.AppliedDirective, depre
 	}
 }
 
+func printType(typeName string, name string, extend bool, out *strings.Builder) {
+	if extend {
+		typeName = "extend " + typeName
+	}
+	fmt.Fprintf(out, "%s %s", typeName, name)
+}
+
 func sortAppliedDirectives(appliedDirectives []*graphql.AppliedDirective) []*graphql.AppliedDirective {
 	sorted := make([]*graphql.AppliedDirective, 0, len(appliedDirectives))
 	for _, v := range appliedDirectives {
@@ -181,7 +188,7 @@ func printEnumDefinitions(enums []*graphql.Enum, out *strings.Builder) {
 
 	for _, enum := range enums {
 		printDescription(enum.Description(), 0, out)
-		fmt.Fprintf(out, "enum %s", enum.Name())
+		printType("enum", enum.Name(), enum.Extend, out)
 		printAppliedDirectives(enum.AppliedDirectives, "", out)
 		out.WriteString(" {\n")
 
@@ -212,7 +219,7 @@ func printInputObjectDefinitions(inputObjects []*graphql.InputObject, out *strin
 
 	for _, inputObject := range inputObjects {
 		printDescription(inputObject.Description(), 0, out)
-		fmt.Fprintf(out, "input %s", inputObject.Name())
+		printType("input", inputObject.Name(), inputObject.Extend, out)
 		printAppliedDirectives(inputObject.AppliedDirectives, "", out)
 		out.WriteString(" {\n")
 		printInputObjectFieldDefinitions(inputObject.Fields(), out)
@@ -264,7 +271,7 @@ func printObjectDefinitions(objects []*graphql.Object, out *strings.Builder) {
 
 	for _, object := range objects {
 		printDescription(object.Description(), 0, out)
-		fmt.Fprintf(out, "type %s", object.Name())
+		printType("type", object.Name(), object.Extend, out)
 		if len(object.Interfaces()) > 0 {
 			interfaces := make([]string, 0, len(object.Interfaces()))
 			for _, i := range object.Interfaces() {
@@ -317,7 +324,7 @@ func printUnionDefinitions(unions []*graphql.Union, out *strings.Builder) {
 
 	for _, union := range unions {
 		printDescription(union.Description(), 0, out)
-		fmt.Fprintf(out, "union %s", union.Name())
+		printType("union", union.Name(), union.Extend, out)
 		printAppliedDirectives(union.AppliedDirectives, "", out)
 		typeNames := make([]string, 0, len(union.Types()))
 		for _, t := range union.Types() {
