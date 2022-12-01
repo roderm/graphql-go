@@ -342,6 +342,7 @@ type Object struct {
 	PrivateDescription string `json:"description"`
 	IsTypeOf           IsTypeOfFn
 	AppliedDirectives  []*AppliedDirective `json:"appliedDirectives"`
+	Extend             bool                `json:"extend"`
 
 	typeConfig            ObjectConfig
 	initialisedFields     bool
@@ -378,6 +379,7 @@ type ObjectConfig struct {
 	IsTypeOf          IsTypeOfFn          `json:"isTypeOf"`
 	Description       string              `json:"description"`
 	AppliedDirectives []*AppliedDirective `json:"appliedDirectives"`
+	Extend            bool                `json:"extend"`
 }
 
 type FieldsThunk func() Fields
@@ -400,6 +402,7 @@ func NewObject(config ObjectConfig) *Object {
 	objectType.PrivateDescription = config.Description
 	objectType.IsTypeOf = config.IsTypeOf
 	objectType.AppliedDirectives = config.AppliedDirectives
+	objectType.Extend = config.Extend
 	objectType.typeConfig = config
 
 	return objectType
@@ -703,6 +706,7 @@ type Interface struct {
 	PrivateDescription string `json:"description"`
 	ResolveType        ResolveTypeFn
 	AppliedDirectives  []*AppliedDirective `json:"appliedDirectives"`
+	Extend             bool                `json:"extend"`
 
 	typeConfig        InterfaceConfig
 	initialisedFields bool
@@ -715,6 +719,7 @@ type InterfaceConfig struct {
 	ResolveType       ResolveTypeFn
 	Description       string `json:"description"`
 	AppliedDirectives []*AppliedDirective
+	Extend            bool `json:"extend"`
 }
 
 // ResolveTypeParams Params for ResolveTypeFn()
@@ -747,6 +752,7 @@ func NewInterface(config InterfaceConfig) *Interface {
 	it.PrivateDescription = config.Description
 	it.ResolveType = config.ResolveType
 	it.AppliedDirectives = config.AppliedDirectives
+	it.Extend = config.Extend
 	it.typeConfig = config
 
 	return it
@@ -821,6 +827,7 @@ type Union struct {
 	PrivateDescription string `json:"description"`
 	ResolveType        ResolveTypeFn
 	AppliedDirectives  []*AppliedDirective
+	Extend             bool `json:"extend"`
 
 	typeConfig      UnionConfig
 	initalizedTypes bool
@@ -838,6 +845,7 @@ type UnionConfig struct {
 	ResolveType       ResolveTypeFn
 	Description       string `json:"description"`
 	AppliedDirectives []*AppliedDirective
+	Extend            bool `json:"extend"`
 }
 
 func NewUnion(config UnionConfig) *Union {
@@ -853,6 +861,7 @@ func NewUnion(config UnionConfig) *Union {
 	objectType.PrivateDescription = config.Description
 	objectType.ResolveType = config.ResolveType
 	objectType.AppliedDirectives = config.AppliedDirectives
+	objectType.Extend = config.Extend
 
 	objectType.typeConfig = config
 
@@ -956,6 +965,7 @@ type Enum struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
 	AppliedDirectives  []*AppliedDirective
+	Extend             bool `json:"extend"`
 
 	enumConfig   EnumConfig
 	values       []*EnumValueDefinition
@@ -976,6 +986,7 @@ type EnumConfig struct {
 	Values            EnumValueConfigMap `json:"values"`
 	Description       string             `json:"description"`
 	AppliedDirectives []*AppliedDirective
+	Extend            bool `json:"extend"`
 }
 type EnumValueDefinition struct {
 	Name              string      `json:"name"`
@@ -996,6 +1007,7 @@ func NewEnum(config EnumConfig) *Enum {
 	gt.PrivateName = config.Name
 	gt.PrivateDescription = config.Description
 	gt.AppliedDirectives = config.AppliedDirectives
+	gt.Extend = config.Extend
 
 	if gt.values, gt.err = gt.defineEnumValues(config.Values); gt.err != nil {
 		return gt
@@ -1136,6 +1148,7 @@ type InputObject struct {
 	PrivateName        string `json:"name"`
 	PrivateDescription string `json:"description"`
 	AppliedDirectives  []*AppliedDirective
+	Extend             bool `json:"extend"`
 
 	typeConfig InputObjectConfig
 	fields     InputObjectFieldMap
@@ -1176,6 +1189,7 @@ type InputObjectConfig struct {
 	Name              string      `json:"name"`
 	Fields            interface{} `json:"fields"`
 	Description       string      `json:"description"`
+	Extend            bool        `json:"extend"`
 	AppliedDirectives []*AppliedDirective
 }
 
@@ -1188,6 +1202,7 @@ func NewInputObject(config InputObjectConfig) *InputObject {
 	gt.PrivateName = config.Name
 	gt.PrivateDescription = config.Description
 	gt.AppliedDirectives = config.AppliedDirectives
+	gt.Extend = config.Extend
 	gt.typeConfig = config
 	return gt
 }
