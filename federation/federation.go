@@ -189,20 +189,29 @@ func NewFederatedSchema(config FederatedSchemaConfig) (graphql.Schema, error) {
 
 	// find entities
 	entities := findEntityTypes(schema)
-	var entityType graphql.Type
-	entityType = graphql.NewScalar(graphql.ScalarConfig{
-		Name: "_Entity",
-	})
-	if len(entities) > 0 {
-		entityType = graphql.NewUnion(
-			graphql.UnionConfig{
-				Name:        "_Entity",
-				Types:       entities,
-				ResolveType: config.EntityTypeResolver,
+	if len(entities) == 0 {
+		entities = append(entities, graphql.NewObject(graphql.ObjectConfig{
+			Name: "_ExtendHelper",
+			Fields: graphql.Fields{
+				"id": &graphql.Field{
+					Name: "id",
+					Type: graphql.NewNonNull(graphql.ID),
+					AppliedDirectives: []*graphql.AppliedDirective{
+						ExternalAppliedDirective,
+					},
+				},
 			},
-		)
-		schema.TypeMap()["_Entity"] = entityType
+		}))
 	}
+
+	entityType := graphql.NewUnion(
+		graphql.UnionConfig{
+			Name:        "_Entity",
+			Types:       entities,
+			ResolveType: config.EntityTypeResolver,
+		},
+	)
+	schema.TypeMap()["_Entity"] = entityType
 
 	schema.QueryType().AddFieldConfig("_entities", &graphql.Field{
 		Name: "_entities",
