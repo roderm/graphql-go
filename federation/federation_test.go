@@ -180,7 +180,7 @@ type Product @key(fields: "id", resolvable: true) {
 }
 
 type Query {
-  _entities(representations: [_Any!]!): [_Entity]
+  _entities(representations: [_Any!]!): [_Entity]!
   _service: _Service
   product(id: ID!): Product
 }
@@ -194,7 +194,7 @@ type _Service {
   sdl: String!
 }
 
-union _Entity = Product | User
+union _Entity = Product
 
 "String-serialized scalar represents a set of fields that's passed to a federated directive, such as @key, @requires, or @provides"
 scalar FieldSet
@@ -300,7 +300,7 @@ type Product @key(fields: "id", resolvable: true) {
 }
 
 type Query {
-  _entities(representations: [_Any!]!): [_Entity]
+  _entities(representations: [_Any!]!): [_Entity]!
   _service: _Service
 }
 
@@ -313,7 +313,7 @@ type _Service {
   sdl: String!
 }
 
-union _Entity = Product | User
+union _Entity = Product
 
 "String-serialized scalar represents a set of fields that's passed to a federated directive, such as @key, @requires, or @provides"
 scalar FieldSet

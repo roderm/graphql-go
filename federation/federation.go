@@ -8,7 +8,6 @@ import (
 )
 
 type FederatedSchemaConfig struct {
-	IsBase                bool
 	EntitiesFieldResolver graphql.FieldResolveFn
 	EntityTypeResolver    graphql.ResolveTypeFn
 	graphql.SchemaConfig
@@ -135,43 +134,39 @@ var federationLinkAppliedDirective = LinkAppliedDirective(
 // new schema
 
 func NewFederatedSchema(config FederatedSchemaConfig) (graphql.Schema, error) {
-	if config.IsBase {
-		// add federated directives
-		config.Directives = append(config.Directives,
-			// built-in directives
-			graphql.DeprecatedDirective,
-			graphql.IncludeDirective,
-			graphql.SkipDirective,
-			// federated directives
-			ComposeDirectiveDefinition,
-			ExternalDirectiveDefinition,
-			InaccessibleDirectiveDefinition,
-			KeyDirectiveDefinition,
-			LinkDirectiveDefinition,
-			OverrideDirectiveDefinition,
-			ProvidesDirectiveDefinition,
-			RequiresDirectiveDefinition,
-			ShareableDirectiveDefinition,
-			TagDirectiveDefinition,
-		)
+	// add federated directives
+	config.Directives = append(config.Directives,
+		// built-in directives
+		graphql.DeprecatedDirective,
+		graphql.IncludeDirective,
+		graphql.SkipDirective,
+		// federated directives
+		ComposeDirectiveDefinition,
+		ExternalDirectiveDefinition,
+		InaccessibleDirectiveDefinition,
+		KeyDirectiveDefinition,
+		LinkDirectiveDefinition,
+		OverrideDirectiveDefinition,
+		ProvidesDirectiveDefinition,
+		RequiresDirectiveDefinition,
+		ShareableDirectiveDefinition,
+		TagDirectiveDefinition,
+	)
 
-		// add @link directive to the schema
-		config.AppliedDirectives = append(config.AppliedDirectives, federationLinkAppliedDirective)
-
-		// add federated types
-		// scalar _Any
-		// scalar FieldSet
-		if config.Types == nil {
-			config.Types = make([]graphql.Type, 0)
-		}
+	// add @link directive to the schema
+	config.AppliedDirectives = append(config.AppliedDirectives, federationLinkAppliedDirective)
+	// add federated types
+	// scalar _Any
+	// scalar FieldSet
+	if config.Types == nil {
+		config.Types = make([]graphql.Type, 0)
 	}
 	config.Types = append(config.Types, _AnyType, _FieldSetType, _ServiceType)
 	// ensure there is a valid query type
 	query := config.Query
 	if query == nil {
 		query = graphql.NewObject(graphql.ObjectConfig{
-			Name:   "Query",
-			Extend: !config.IsBase,
+			Name: "Query",
 			Fields: graphql.Fields{
 				"_service": &graphql.Field{
 					Name: "_service",
@@ -204,12 +199,11 @@ func NewFederatedSchema(config FederatedSchemaConfig) (graphql.Schema, error) {
 				Name:        "_Entity",
 				Types:       entities,
 				ResolveType: config.EntityTypeResolver,
-				Extend:      true,
 			},
 		)
-
 		schema.TypeMap()["_Entity"] = entityType
 	}
+
 	schema.QueryType().AddFieldConfig("_entities", &graphql.Field{
 		Name: "_entities",
 		Type: graphql.NewNonNull(graphql.NewList(entityType)),
@@ -221,23 +215,8 @@ func NewFederatedSchema(config FederatedSchemaConfig) (graphql.Schema, error) {
 		Resolve: config.EntitiesFieldResolver,
 	})
 
-	// update _service { sdl } resolver to correct value
-	sdlSchema, err := graphql.NewSchema(graphql.SchemaConfig{
-		Types: config.Types,
-		Query: config.Query,
-	})
-	if err != nil {
-		panic(err)
-	}
+	sdl := PrintSchema(schema, DefaultPrinterOptions)
 
-	sdl := PrintSchema(sdlSchema, PrinterOptions{})
-	fmt.Println(sdl)
-	// 	sdl = `
-	// extend type Guest @key(fields: "id", resolvable: false) {
-	//   id: ID! @external
-	//   seatNr: Int
-	// }
-	// 	`
 	schema.QueryType().AddFieldConfig("_service", &graphql.Field{
 		Name: "_service",
 		Type: _ServiceType,
