@@ -75,6 +75,9 @@ var _ Leaf = (*Enum)(nil)
 
 // IsLeafType determines if given type is a leaf value
 func IsLeafType(ttype Type) bool {
+	if GetNamed(ttype).String() == "_Entity" {
+		return false
+	}
 	switch GetNamed(ttype).(type) {
 	case *Scalar, *Enum:
 		return true
