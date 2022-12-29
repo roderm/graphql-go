@@ -807,7 +807,13 @@ func completeAbstractValue(eCtx *executionContext, returnType Abstract, fieldAST
 		panic(err)
 	}
 
-	if !eCtx.Schema.IsPossibleType(returnType, runtimeType) && returnType.Name() != "_Entity" {
+	// obj, ok := eCtx.Schema.Type(returnType.Name()).(*Object)
+	// if !ok {
+	// 	fmt.Printf("not object %s => %T\n", returnType.Name(), eCtx.Schema.Type(returnType.Name()))
+	// }
+	// isType := runtimeType.IsTypeOf(IsTypeOfParams{})
+
+	if !eCtx.Schema.IsPossibleType(returnType, runtimeType) /*&& !isType && returnType.Name() != "_Entity"*/ {
 		panic(gqlerrors.NewFormattedError(
 			fmt.Sprintf(`Runtime Object type "%v" is not a possible type `+
 				`for "%v".`, runtimeType, returnType),

@@ -189,43 +189,29 @@ func NewFederatedSchema(config FederatedSchemaConfig) (graphql.Schema, error) {
 
 	// find entities
 	entities := findEntityTypes(schema)
-	if len(entities) == 0 {
-		entities = append(entities, graphql.NewObject(graphql.ObjectConfig{
-			Name: "_ExtendHelper",
-			Fields: graphql.Fields{
-				"id": &graphql.Field{
-					Name: "id",
-					Type: graphql.NewNonNull(graphql.ID),
-					AppliedDirectives: []*graphql.AppliedDirective{
-						ExternalAppliedDirective,
-					},
+	if len(entities) > 0 {
+		entityType := graphql.NewUnion(
+			graphql.UnionConfig{
+				Name:        "_Entity",
+				Types:       entities,
+				ResolveType: config.EntityTypeResolver,
+			},
+		)
+		schema.AppendType(entityType)
+
+		schema.QueryType().AddFieldConfig("_entities", &graphql.Field{
+			Name: "_entities",
+			Type: graphql.NewNonNull(graphql.NewList(entityType)),
+			Args: graphql.FieldConfigArgument{
+				"representations": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(_AnyType))),
 				},
 			},
-		}))
+			Resolve: config.EntitiesFieldResolver,
+		})
 	}
 
-	entityType := graphql.NewUnion(
-		graphql.UnionConfig{
-			Name:        "_Entity",
-			Types:       entities,
-			ResolveType: config.EntityTypeResolver,
-		},
-	)
-	schema.TypeMap()["_Entity"] = entityType
-
-	schema.QueryType().AddFieldConfig("_entities", &graphql.Field{
-		Name: "_entities",
-		Type: graphql.NewNonNull(graphql.NewList(entityType)),
-		Args: graphql.FieldConfigArgument{
-			"representations": &graphql.ArgumentConfig{
-				Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(_AnyType))),
-			},
-		},
-		Resolve: config.EntitiesFieldResolver,
-	})
-
 	sdl := PrintSchema(schema, DefaultPrinterOptions)
-
 	schema.QueryType().AddFieldConfig("_service", &graphql.Field{
 		Name: "_service",
 		Type: _ServiceType,

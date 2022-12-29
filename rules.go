@@ -1202,14 +1202,15 @@ func PossibleFragmentSpreadsRule(context *ValidationContext) *ValidationRuleInst
 						parentType, _ := context.ParentType().(Type)
 
 						if fragType != nil && parentType != nil && !doTypesOverlap(context.Schema(), fragType, parentType) {
-							if parentType.String() != "_Entity" {
-								reportError(
-									context,
-									fmt.Sprintf(`Fragment cannot be spread here as objects of `+
-										`type "%v" can never be of type "%v".`, parentType, fragType),
-									[]ast.Node{node},
-								)
-							}
+							// obj, ok := fragType.(*Object) // _Entitiy
+							// if !ok || !obj.IsTypeOf(IsTypeOfParams{}) {
+							reportError(
+								context,
+								fmt.Sprintf(`Fragment cannot be spread here as objects of `+
+									`type "%v" can never be of type "%v".`, parentType, fragType),
+								[]ast.Node{node},
+							)
+							// }
 						}
 					}
 					return visitor.ActionNoChange, nil

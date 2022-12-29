@@ -254,7 +254,7 @@ func printInterfaceDefinitions(interfaces []*graphql.Interface, out *strings.Bui
 
 	for _, intf := range interfaces {
 		printDescription(intf.Description(), 0, out)
-		fmt.Fprintf(out, "interface %s", intf.Name())
+		printType("interface", intf.Name(), intf.Extend, out)
 		printAppliedDirectives(intf.AppliedDirectives, "", out)
 		out.WriteString(" {\n")
 		printFieldDefinitions(intf.Fields(), out)
@@ -278,7 +278,7 @@ func printObjectDefinitions(objects []*graphql.Object, out *strings.Builder) {
 				interfaces = append(interfaces, i.Name())
 			}
 			out.WriteString(" implements ")
-			out.WriteString(strings.Join(interfaces, ", "))
+			out.WriteString(strings.Join(interfaces, " & "))
 		}
 		printAppliedDirectives(object.AppliedDirectives, "", out)
 		out.WriteString(" {\n")

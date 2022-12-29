@@ -154,14 +154,18 @@ func coerceValue(ttype Input, value interface{}) interface{} {
 		if valueMap == nil {
 			valueMap = map[string]interface{}{}
 		}
-
-		for name, field := range ttype.Fields() {
-			fieldValue := coerceValue(field.Type, valueMap[name])
-			if isNullish(fieldValue) {
-				fieldValue = field.DefaultValue
-			}
-			if !isNullish(fieldValue) {
-				obj[name] = fieldValue
+		for name, value := range valueMap {
+			field, ok := ttype.Fields()[name]
+			if ok {
+				fieldValue := coerceValue(field.Type, valueMap[name])
+				if isNullish(fieldValue) {
+					fieldValue = field.DefaultValue
+				}
+				if !isNullish(fieldValue) {
+					obj[name] = fieldValue
+				}
+			} else {
+				obj[name] = value
 			}
 		}
 		return obj
@@ -266,11 +270,11 @@ func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
 		sort.Strings(valueMapFieldNames)
 
 		// Ensure every provided field is defined.
-		for _, fieldName := range valueMapFieldNames {
-			if _, ok := fields[fieldName]; !ok {
-				messagesReduce = append(messagesReduce, fmt.Sprintf(`In field "%v": Unknown field.`, fieldName))
-			}
-		}
+		// for _, fieldName := range valueMapFieldNames {
+		// 	if _, ok := fields[fieldName]; !ok {
+		// 		messagesReduce = append(messagesReduce, fmt.Sprintf(`In field "%v": Unknown field.`, fieldName))
+		// 	}
+		// }
 
 		// Ensure every defined field is valid.
 		for _, fieldName := range fieldNames {
