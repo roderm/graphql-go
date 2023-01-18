@@ -1374,14 +1374,36 @@ func parseTypeExtensionDefinition(parser *Parser) (ast.Node, error) {
 		return nil, err
 	}
 
-	definition, err := parseObjectTypeDefinition(parser)
-	if err != nil {
-		return nil, err
+	switch parser.Token.Value {
+	case lexer.TYPE:
+		definition, err := parseObjectTypeDefinition(parser)
+		if err != nil {
+			return nil, err
+		}
+		return ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
+			Loc:        loc(parser, start),
+			Definition: definition.(*ast.ObjectDefinition),
+		}), nil
+	case lexer.INTERFACE:
+		definition, err := parseInterfaceTypeDefinition(parser)
+		if err != nil {
+			return nil, err
+		}
+		return ast.NewInterfaceExtensionDefinition(&ast.InterfaceExtensionDefinition{
+			Loc:        loc(parser, start),
+			Definition: definition.(*ast.InterfaceDefinition),
+		}), nil
+	case lexer.INPUT:
+		definition, err := parseInputObjectTypeDefinition(parser)
+		if err != nil {
+			return nil, err
+		}
+		return ast.NewInputObjectExtensionDefinition(&ast.InputObjectExtensionDefinition{
+			Loc:        loc(parser, start),
+			Definition: definition.(*ast.InputObjectDefinition),
+		}), nil
 	}
-	return ast.NewTypeExtensionDefinition(&ast.TypeExtensionDefinition{
-		Loc:        loc(parser, start),
-		Definition: definition.(*ast.ObjectDefinition),
-	}), nil
+	return nil, fmt.Errorf("%s can't be extended", parser.Token.Value)
 }
 
 /**

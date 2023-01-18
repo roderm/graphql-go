@@ -127,31 +127,41 @@ func isEntity(t *graphql.Object) bool {
 
 // @link(import : ["@composeDirective", "@external", "@inaccessible", "@key", "@override", "@provides", "@requires", "@shareable", "@tag", "@FieldSet"], url : "https://specs.apollo.dev/federation/v2.1")
 var federationLinkAppliedDirective = LinkAppliedDirective(
-	"https://specs.apollo.dev/federation/v2.1",
-	[]string{"@composeDirective", "@external", "@inaccessible", "@key", "@override", "@provides", "@requires", "@shareable", "@tag", "FieldSet"},
+	"https://specs.apollo.dev/federation/v2.0",
+	[]string{ /*"@composeDirective", */ "@external", "@inaccessible", "@key", "@override", "@provides", "@requires", "@shareable", "@tag", "FieldSet"},
 )
 
-// new schema
+var FederationDirectives = []*graphql.Directive{
+	// built-in directives
+	graphql.DeprecatedDirective,
+	graphql.IncludeDirective,
+	graphql.SkipDirective,
+	// federated directives
+	ComposeDirectiveDefinition,
+	ExternalDirectiveDefinition,
+	InaccessibleDirectiveDefinition,
+	KeyDirectiveDefinition,
+	LinkDirectiveDefinition,
+	OverrideDirectiveDefinition,
+	ProvidesDirectiveDefinition,
+	RequiresDirectiveDefinition,
+	ShareableDirectiveDefinition,
+	TagDirectiveDefinition,
+}
 
+// new schema
 func NewFederatedSchema(config FederatedSchemaConfig) (graphql.Schema, error) {
 	// add federated directives
-	config.Directives = append(config.Directives,
-		// built-in directives
-		graphql.DeprecatedDirective,
-		graphql.IncludeDirective,
-		graphql.SkipDirective,
-		// federated directives
-		ComposeDirectiveDefinition,
-		ExternalDirectiveDefinition,
-		InaccessibleDirectiveDefinition,
-		KeyDirectiveDefinition,
-		LinkDirectiveDefinition,
-		OverrideDirectiveDefinition,
-		ProvidesDirectiveDefinition,
-		RequiresDirectiveDefinition,
-		ShareableDirectiveDefinition,
-		TagDirectiveDefinition,
-	)
+
+AddDirectives:
+	for _, d := range FederationDirectives {
+		for _, existing := range config.Directives {
+			if d == existing {
+				continue AddDirectives
+			}
+		}
+		config.Directives = append(config.Directives, d)
+	}
 
 	// add @link directive to the schema
 	config.AppliedDirectives = append(config.AppliedDirectives, federationLinkAppliedDirective)
@@ -163,6 +173,11 @@ func NewFederatedSchema(config FederatedSchemaConfig) (graphql.Schema, error) {
 	}
 	config.Types = append(config.Types, _AnyType, _FieldSetType, _ServiceType)
 	// ensure there is a valid query type
+	schema, err := graphql.NewSchema(config.SchemaConfig)
+	if err != nil {
+		panic("failure to create schema" + err.Error())
+	}
+	sdl := PrintSchema(schema, PrinterOptions{})
 	query := config.Query
 	if query == nil {
 		query = graphql.NewObject(graphql.ObjectConfig{
@@ -171,6 +186,9 @@ func NewFederatedSchema(config FederatedSchemaConfig) (graphql.Schema, error) {
 				"_service": &graphql.Field{
 					Name: "_service",
 					Type: _ServiceType,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return &_Service{SDL: sdl}, nil
+					},
 				},
 			},
 		})
@@ -179,10 +197,13 @@ func NewFederatedSchema(config FederatedSchemaConfig) (graphql.Schema, error) {
 		query.AddFieldConfig("_service", &graphql.Field{
 			Name: "_service",
 			Type: _ServiceType,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				return &_Service{SDL: sdl}, nil
+			},
 		})
 	}
 
-	schema, err := graphql.NewSchema(config.SchemaConfig)
+	schema, err = graphql.NewSchema(config.SchemaConfig)
 	if err != nil {
 		panic("failure to create schema" + err.Error())
 	}
@@ -192,9 +213,12 @@ func NewFederatedSchema(config FederatedSchemaConfig) (graphql.Schema, error) {
 	if len(entities) > 0 {
 		entityType := graphql.NewUnion(
 			graphql.UnionConfig{
-				Name:        "_Entity",
-				Types:       entities,
-				ResolveType: config.EntityTypeResolver,
+				Name:              "_Entity",
+				Types:             entities,
+				ResolveType:       config.EntityTypeResolver,
+				AppliedDirectives: []*graphql.AppliedDirective{
+					// ShareableDirective,
+				},
 			},
 		)
 		schema.AppendType(entityType)
@@ -211,13 +235,5 @@ func NewFederatedSchema(config FederatedSchemaConfig) (graphql.Schema, error) {
 		})
 	}
 
-	sdl := PrintSchema(schema, DefaultPrinterOptions)
-	schema.QueryType().AddFieldConfig("_service", &graphql.Field{
-		Name: "_service",
-		Type: _ServiceType,
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			return &_Service{SDL: sdl}, nil
-		},
-	})
 	return schema, err
 }

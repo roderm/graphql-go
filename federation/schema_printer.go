@@ -77,6 +77,27 @@ func sortDirectiveDefinitions(directives []*graphql.Directive) []*graphql.Direct
 	return sorted
 }
 
+func getValue(outType graphql.Type, value interface{}) string {
+	switch ttype := outType.(type) {
+	case *graphql.NonNull:
+		return getValue(ttype.OfType, value)
+	case *graphql.Scalar:
+		switch value := ttype.Serialize(value).(type) {
+		case string:
+			return fmt.Sprintf("\"%s\"", value)
+		case bool:
+			if value {
+				return "true"
+			}
+			return "false"
+		case int:
+			return fmt.Sprintf("%d", value)
+		}
+		return ttype.Serialize(value).(string)
+	}
+	return ""
+}
+
 // Example
 // "Marks an element of a GraphQL schema as no longer supported."
 // directive @deprecated(reason: String) on FIELD_DEFINITION | ENUM_VALUE
@@ -86,14 +107,22 @@ func printDirectiveDefinition(directive *graphql.Directive, out *strings.Builder
 	out.WriteString(directive.Name)
 	if len(directive.Args) > 0 {
 		out.WriteString("(")
-
+		defaultValue := func(arg *graphql.Argument) string {
+			if arg.DefaultValue != nil {
+				val := getValue(arg.Type, arg.DefaultValue)
+				if val != "" {
+					return fmt.Sprintf(" = %s", val)
+				}
+			}
+			return ""
+		}
 		args := make([]string, 0, len(directive.Args))
 		for _, arg := range directive.Args {
 			switch arg.Type.(type) {
 			case *graphql.List:
-				args = append(args, fmt.Sprintf("%s: [%s]", arg.Name(), arg.Type.Name()))
+				args = append(args, fmt.Sprintf("%s: [%s]%s", arg.Name(), arg.Type.Name(), defaultValue(arg)))
 			default:
-				args = append(args, fmt.Sprintf("%s: %s", arg.Name(), arg.Type.Name()))
+				args = append(args, fmt.Sprintf("%s: %s%s", arg.Name(), arg.Type.Name(), defaultValue(arg)))
 			}
 		}
 		out.WriteString(strings.Join(args, ", "))
@@ -212,7 +241,7 @@ func printEnumDefinitions(enums []*graphql.Enum, out *strings.Builder) {
 
 // input object
 
-func printInputObjectDefinitions(inputObjects []*graphql.InputObject, out *strings.Builder) {
+func PrintInputObjectDefinitions(inputObjects []*graphql.InputObject, out *strings.Builder) {
 	sort.Slice(inputObjects, func(i, j int) bool {
 		return inputObjects[i].Name() < inputObjects[j].Name()
 	})
@@ -392,10 +421,10 @@ func PrintSchema(schema graphql.Schema, options PrinterOptions) string {
 	buitlInScalars := map[string]bool{
 		"Boolean": true, "Float": true, "ID": true, "Int": true, "String": true,
 	}
-	for name, gqlType := range schema.TypeMap() {
+	for _, gqlType := range schema.TypeMap() {
 		// skip built in types
-		_, builtIn := buitlInScalars[name]
-		if strings.HasPrefix(name, "__") || builtIn {
+		_, builtIn := buitlInScalars[gqlType.Name()]
+		if strings.HasPrefix(gqlType.Name(), "__") || builtIn {
 			continue
 		}
 
@@ -426,7 +455,7 @@ func PrintSchema(schema graphql.Schema, options PrinterOptions) string {
 		printDirectiveDefinitions(schema.Directives(), &sdl)
 	}
 	printEnumDefinitions(enums, &sdl)
-	printInputObjectDefinitions(inputObjects, &sdl)
+	PrintInputObjectDefinitions(inputObjects, &sdl)
 	printInterfaceDefinitions(interfaces, &sdl)
 	printObjectDefinitions(objects, &sdl)
 	printUnionDefinitions(unions, &sdl)
