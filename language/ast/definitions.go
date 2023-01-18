@@ -186,6 +186,82 @@ func (def *TypeExtensionDefinition) GetOperation() string {
 	return ""
 }
 
+// InterfaceExtensionDefinition implements Node, Definition
+type InterfaceExtensionDefinition struct {
+	Kind       string
+	Loc        *Location
+	Definition *InterfaceDefinition
+}
+
+func NewInterfaceExtensionDefinition(def *InterfaceExtensionDefinition) *InterfaceExtensionDefinition {
+	if def == nil {
+		def = &InterfaceExtensionDefinition{}
+	}
+	return &InterfaceExtensionDefinition{
+		Kind:       kinds.InterfaceExtensionDefinition,
+		Loc:        def.Loc,
+		Definition: def.Definition,
+	}
+}
+
+func (def *InterfaceExtensionDefinition) GetKind() string {
+	return def.Kind
+}
+
+func (def *InterfaceExtensionDefinition) GetLoc() *Location {
+	return def.Loc
+}
+
+func (def *InterfaceExtensionDefinition) GetVariableDefinitions() []*VariableDefinition {
+	return []*VariableDefinition{}
+}
+
+func (def *InterfaceExtensionDefinition) GetSelectionSet() *SelectionSet {
+	return &SelectionSet{}
+}
+
+func (def *InterfaceExtensionDefinition) GetOperation() string {
+	return ""
+}
+
+// InputObjectExtensionDefinition implements Node, Definition
+type InputObjectExtensionDefinition struct {
+	Kind       string
+	Loc        *Location
+	Definition *InputObjectDefinition
+}
+
+func NewInputObjectExtensionDefinition(def *InputObjectExtensionDefinition) *InputObjectExtensionDefinition {
+	if def == nil {
+		def = &InputObjectExtensionDefinition{}
+	}
+	return &InputObjectExtensionDefinition{
+		Kind:       kinds.InputObjectExtensionDefinition,
+		Loc:        def.Loc,
+		Definition: def.Definition,
+	}
+}
+
+func (def *InputObjectExtensionDefinition) GetKind() string {
+	return def.Kind
+}
+
+func (def *InputObjectExtensionDefinition) GetLoc() *Location {
+	return def.Loc
+}
+
+func (def *InputObjectExtensionDefinition) GetVariableDefinitions() []*VariableDefinition {
+	return []*VariableDefinition{}
+}
+
+func (def *InputObjectExtensionDefinition) GetSelectionSet() *SelectionSet {
+	return &SelectionSet{}
+}
+
+func (def *InputObjectExtensionDefinition) GetOperation() string {
+	return ""
+}
+
 // DirectiveDefinition implements Node, Definition
 type DirectiveDefinition struct {
 	Kind        string

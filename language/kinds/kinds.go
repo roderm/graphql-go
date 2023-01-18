@@ -52,7 +52,9 @@ const (
 	InputObjectDefinition = "InputObjectDefinition" // previously InputObjectTypeDefinition
 
 	// Types Extensions
-	TypeExtensionDefinition = "TypeExtensionDefinition"
+	TypeExtensionDefinition        = "TypeExtensionDefinition"
+	InterfaceExtensionDefinition   = "InterfaceExtensionDefinition"
+	InputObjectExtensionDefinition = "InputObjectExtensionDefinition"
 
 	// Directive Definitions
 	DirectiveDefinition = "DirectiveDefinition"
