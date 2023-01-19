@@ -114,9 +114,6 @@ func findEntityTypes(schema graphql.Schema) []*graphql.Object {
 }
 
 func isEntity(t *graphql.Object) bool {
-	if t.Extend {
-		return false
-	}
 	for _, directive := range t.AppliedDirectives {
 		if directive.Name == "key" {
 			return true

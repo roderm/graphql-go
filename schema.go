@@ -52,9 +52,9 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 
 	schema := Schema{}
 
-	if err = invariant(config.Query != nil, "Schema query must be Object Type but got: nil."); err != nil {
-		return schema, err
-	}
+	// if err = invariant(config.Query != nil, "Schema query must be Object Type but got: nil."); err != nil {
+	// 	return schema, err
+	// }
 
 	// if schema config contains error at creation time, return those errors
 	if config.Query != nil && config.Query.err != nil {
