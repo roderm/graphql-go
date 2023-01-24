@@ -1,3 +1,24 @@
+## This is fork of [graphql-go/graphql](https://github.com/graphql-go/graphql) that adds [Apollo Federation](https://www.apollographql.com/docs/federation/) support. 
+
+Federation support is provided through a new package which requires few changes in the core lib. Sadly `graphql-go/graphql` project appears to be inactive at this point of time and required changes to the core lib were not yet merged:
+
+* https://github.com/graphql-go/graphql/pull/651 (bug fix)
+* https://github.com/graphql-go/graphql/pull/652 (core feature)
+* https://github.com/graphql-go/graphql/pull/653 (bug fix)
+
+Federation package source code is available under [federation](https://github.com/dariuszkuc/graphql/tree/federation/federation) branch and released as [v0.9.1-federation](https://github.com/dariuszkuc/graphql/releases/tag/v0.9.1-federation). See `federation` package [README](https://github.com/dariuszkuc/graphql/blob/federation/federation/README.md) for usage details.
+
+In order to use new federation features in your project you need to replace the official `graphql-go` release with one from the fork, i.e. add following to your `go.mod` file
+
+```
+replace github.com/graphql-go/graphql => github.com/dariuszkuc/graphql v0.9.1-federation
+```
+
+Example projects:
+* [example federation compatibility project](https://github.com/apollographql/apollo-federation-subgraph-compatibility/tree/main/implementations/graphql-go)
+
+------
+
 # graphql [![CircleCI](https://circleci.com/gh/graphql-go/graphql/tree/master.svg?style=svg)](https://circleci.com/gh/graphql-go/graphql/tree/master) [![Go Reference](https://pkg.go.dev/badge/github.com/graphql-go/graphql.svg)](https://pkg.go.dev/github.com/graphql-go/graphql) [![Coverage Status](https://coveralls.io/repos/github/graphql-go/graphql/badge.svg?branch=master)](https://coveralls.io/github/graphql-go/graphql?branch=master) [![Join the chat at https://gitter.im/graphql-go/graphql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/graphql-go/graphql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 An implementation of GraphQL in Go. Follows the official reference implementation [`graphql-js`](https://github.com/graphql/graphql-js).
@@ -63,12 +84,12 @@ func main() {
 For more complex examples, refer to the [examples/](https://github.com/graphql-go/graphql/tree/master/examples/) directory and [graphql_test.go](https://github.com/graphql-go/graphql/blob/master/graphql_test.go).
 
 ### Third Party Libraries
-| Name          | Author        | Description  |
-|:-------------:|:-------------:|:------------:|
-| [graphql-go-handler](https://github.com/graphql-go/graphql-go-handler) | [Hafiz Ismail](https://github.com/sogko) | Middleware to handle GraphQL queries through HTTP requests. |
-| [graphql-relay-go](https://github.com/graphql-go/graphql-relay-go) | [Hafiz Ismail](https://github.com/sogko) | Lib to construct a graphql-go server supporting react-relay. |
-| [golang-relay-starter-kit](https://github.com/sogko/golang-relay-starter-kit) | [Hafiz Ismail](https://github.com/sogko) | Barebones starting point for a Relay application with Golang GraphQL server. |
-| [dataloader](https://github.com/nicksrandall/dataloader) | [Nick Randall](https://github.com/nicksrandall) | [DataLoader](https://github.com/facebook/dataloader) implementation in Go. |
+|                                     Name                                      |                     Author                      |                                 Description                                  |
+| :---------------------------------------------------------------------------: | :---------------------------------------------: | :--------------------------------------------------------------------------: |
+|    [graphql-go-handler](https://github.com/graphql-go/graphql-go-handler)     |    [Hafiz Ismail](https://github.com/sogko)     |         Middleware to handle GraphQL queries through HTTP requests.          |
+|      [graphql-relay-go](https://github.com/graphql-go/graphql-relay-go)       |    [Hafiz Ismail](https://github.com/sogko)     |         Lib to construct a graphql-go server supporting react-relay.         |
+| [golang-relay-starter-kit](https://github.com/sogko/golang-relay-starter-kit) |    [Hafiz Ismail](https://github.com/sogko)     | Barebones starting point for a Relay application with Golang GraphQL server. |
+|           [dataloader](https://github.com/nicksrandall/dataloader)            | [Nick Randall](https://github.com/nicksrandall) |  [DataLoader](https://github.com/facebook/dataloader) implementation in Go.  |
 
 ### Blog Posts
 - [Golang + GraphQL + Relay](https://wehavefaces.net/learn-golang-graphql-relay-1-e59ea174a902)
