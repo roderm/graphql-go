@@ -174,7 +174,8 @@ AddDirectives:
 	if err != nil {
 		panic("failure to create schema" + err.Error())
 	}
-	sdl := PrintSchema(schema, PrinterOptions{})
+
+	service := new(_Service)
 	query := config.Query
 	if query == nil {
 		query = graphql.NewObject(graphql.ObjectConfig{
@@ -184,7 +185,7 @@ AddDirectives:
 					Name: "_service",
 					Type: _ServiceType,
 					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-						return &_Service{SDL: sdl}, nil
+						return service, nil
 					},
 				},
 			},
@@ -195,7 +196,8 @@ AddDirectives:
 			Name: "_service",
 			Type: _ServiceType,
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				return &_Service{SDL: sdl}, nil
+				return service, nil
+
 			},
 		})
 	}
@@ -231,6 +233,6 @@ AddDirectives:
 			Resolve: config.EntitiesFieldResolver,
 		})
 	}
-
+	service.SDL = PrintSchema(schema, PrinterOptions{})
 	return schema, err
 }
