@@ -96,7 +96,7 @@ var _ServiceType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "_Service",
 	Fields: graphql.Fields{
 		"sdl": &graphql.Field{
-			Type: graphql.NewNonNull(graphql.String),
+			Type: graphql.String,
 		},
 	},
 })
@@ -183,7 +183,7 @@ AddDirectives:
 			Fields: graphql.Fields{
 				"_service": &graphql.Field{
 					Name: "_service",
-					Type: _ServiceType,
+					Type: graphql.NewNonNull(_ServiceType),
 					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 						return service, nil
 					},
@@ -194,7 +194,7 @@ AddDirectives:
 	} else {
 		query.AddFieldConfig("_service", &graphql.Field{
 			Name: "_service",
-			Type: _ServiceType,
+			Type: graphql.NewNonNull(_ServiceType),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				return service, nil
 
@@ -233,6 +233,8 @@ AddDirectives:
 			Resolve: config.EntitiesFieldResolver,
 		})
 	}
-	service.SDL = PrintSchema(schema, PrinterOptions{})
+	service.SDL = PrintSchema(schema, PrinterOptions{
+		IncludeDirectiveDefinition: true,
+	})
 	return schema, err
 }
