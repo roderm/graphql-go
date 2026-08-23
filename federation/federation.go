@@ -233,8 +233,12 @@ AddDirectives:
 			Resolve: config.EntitiesFieldResolver,
 		})
 	}
+	// The schema definition carries the @link that marks this as a Federation
+	// v2 subgraph. Without it a composer reads the subgraph as version one and
+	// silently skips the v2 checks - field conflicts among them.
 	service.SDL = PrintSchema(schema, PrinterOptions{
 		IncludeDirectiveDefinition: true,
+		IncludeSchemaDefinition:    true,
 	})
 	return schema, err
 }
